@@ -16,10 +16,52 @@ global.XMLHttpRequest = XMLHttpRequest;
 global.fetch = fetch;
 
 // === НАСТРОЙКИ ===
-const ACCESS_TOKEN = "cNczbdJnLGrJEJLburoudonCHQzWAjj9i01L9J7uc3ZhQoJAGNfMegNjHogU";
-const USER_ID = "1377866";
+const ACCESS_TOKEN = "K3Z0Au4ykmrd9I9bdNFZAWuE3S32FfMDA2FJi5uvdYaDk5xoW0oKv1rdL7d4";
+const USER_ID = "1374865";
+const TSHOCK_API = "http://127.0.0.1:25565"; // теперь твой сервер Terraria
 
-// === ФУНКЦИЯ: получить socket-токен от DonatePay ===
+// === ТАБЛИЦА НАГРАД ===
+const DONATE_ACTIONS = [
+    { min: 50,  command: "say Спасибо за поддержку!" },
+    { min: 100, command: "give {name} 29 1" },
+    { min: 250, command: "say {name} топ донатер! Получай сокровище!" },
+    { min: 500, command: "spawnmob eyeofcthulhu" }
+];
+
+// === Проверка доступности сервера TShock ===
+async function checkTShockStatus() {
+    try {
+        const res = await fetch(`${TSHOCK_API}/v2/server/status`);
+        if (!res.ok) throw new Error("не ответил");
+        const data = await res.json();
+        console.log(`🟢 Сервер Terraria запущен: игроков ${data.playercount}/${data.maxplayers}`);
+        return true;
+    } catch (err) {
+        console.log("🔴 Сервер Terraria не отвечает:", err.message);
+        return false;
+    }
+}
+
+// === Отправить команду на сервер Terraria ===
+async function sendToTShock(cmd) {
+    try {
+        const res = await fetch(`${TSHOCK_API}/v2/server/rawcmd`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmd }),
+        });
+
+        if (res.ok) {
+            console.log(`🧩 Команда выполнена: ${cmd}`);
+        } else {
+            console.log(`⚠️ Ошибка выполнения команды (${res.status})`);
+        }
+    } catch (err) {
+        console.log("🚫 Не удалось подключиться к серверу Terraria:", err.message);
+    }
+}
+
+// === Получить токен Centrifugo (DonatePay) ===
 async function getSocketToken() {
     const res = await fetch("https://donatepay.ru/api/v2/socket/token", {
         method: "POST",
@@ -33,9 +75,12 @@ async function getSocketToken() {
     return data.token;
 }
 
-// === ЗАПУСК CENTRIFUGO ===
+// === Основной процесс ===
 async function start() {
-    console.log("🔄 Получаю токен...");
+    console.log("🔄 Проверяю Terraria сервер...");
+    await checkTShockStatus();
+
+    console.log("🔄 Получаю токен DonatePay...");
     const token = await getSocketToken();
 
     const centrifuge = new Centrifuge("wss://centrifugo.donatepay.ru/connection/websocket", {
@@ -45,7 +90,6 @@ async function start() {
     });
 
     centrifuge.setToken(token);
-
     const channel = `$public:${USER_ID}`;
     console.log(`📡 Подписка на канал ${channel}...`);
 
@@ -62,6 +106,20 @@ async function start() {
         console.log(`💰 Донат от: ${name}`);
         console.log(`💵 Сумма: ${amount}₽`);
         console.log(`💬 Сообщение: ${msg}`);
+
+        const isServerUp = await checkTShockStatus();
+        if (!isServerUp) {
+            console.log("❌ Команды не будут отправлены — сервер недоступен.");
+            console.log("———————————————");
+            return;
+        }
+
+        for (const action of DONATE_ACTIONS) {
+            if (amount >= action.min) {
+                const cmd = action.command.replace("{name}", name);
+                await sendToTShock(cmd);
+            }
+        }
         console.log("———————————————");
     });
 
