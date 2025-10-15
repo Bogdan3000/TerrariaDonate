@@ -45,7 +45,7 @@ async function checkTShockStatus() {
 // === Отправить команду на сервер Terraria ===
 async function sendToTShock(cmd) {
     try {
-        const res = await fetch(`${TSHOCK_API}/v2/server/rawcmd`, {
+        const res = await fetch(`${TSHOCK_API}/v3/server/rawcmd`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ cmd }),
