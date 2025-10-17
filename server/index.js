@@ -6,7 +6,7 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import http from "http";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 
 const { XMLHttpRequest } = xhr2Pkg;
 const Centrifuge =
@@ -20,9 +20,9 @@ global.XMLHttpRequest = XMLHttpRequest;
 global.fetch = fetch;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SETTINGS_FILE = path.join(__dirname, "settings.json");
+const SETTINGS_FILE = path.join(process.cwd(), "settings.json");
 
-// Инициализация настроек
+// === создаём settings.json, если нет ===
 if (!fs.existsSync(SETTINGS_FILE)) {
     fs.writeFileSync(
         SETTINGS_FILE,
@@ -40,8 +40,8 @@ if (!fs.existsSync(SETTINGS_FILE)) {
                     autoStart: true,
                     logLevel: "info",
                     checkInterval: 30,
-                    backupInterval: 60
-                }
+                    backupInterval: 60,
+                },
             },
             null,
             2
