@@ -33,7 +33,7 @@ const DONATE_ACTIONS = [
 // === Проверка доступности сервера TShock ===
 async function checkTShockStatus() {
     try {
-        const res = await fetch(`${TSHOCK_API}/v2/server/status`);
+        const res = await fetch(`${TSHOCK_API}/v2/server/status?token=${TOKEN}`);
         if (!res.ok) throw new Error("не ответил");
         const data = await res.json();
         console.log(`🟢 Сервер Terraria запущен: игроков ${data.playercount}/${data.maxplayers}`);
