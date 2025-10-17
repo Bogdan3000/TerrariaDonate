@@ -1,20 +1,20 @@
 @echo off
 title BDPTI Dashboard
 echo =====================================
-echo    🚀 Запуск BDPTI Dashboard
+echo   🚀 Starting BDPTI Dashboard
 echo =====================================
 
-REM Переходим в папку проекта (если батник не лежит рядом с package.json — укажи путь)
+REM Go to project directory
 cd /d "%~dp0"
 
-REM Проверяем, есть ли node_modules
+REM Check dependencies
 if not exist node_modules (
-    echo 📦 Устанавливаю зависимости...
+    echo Installing dependencies...
     call npm install
 )
 
-REM Запуск backend'а
-echo 🔄 Запускаю сервер...
-call npm run start
+REM Start the backend
+echo Starting the server...
+call npm run desktop
 
 pause
