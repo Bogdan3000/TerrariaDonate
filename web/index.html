@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDPTI Dashboard | Bebrok Donate Pay Terraria Integration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #8b5cf6;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #0f0f23;
+            --darker: #090913;
+            --dark-light: #1a1a2e;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #2d3748;
+            --card-bg: rgba(15, 15, 35, 0.7);
+            --glow: 0 0 15px rgba(99, 102, 241, 0.3);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius: 12px;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Styles */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .app-header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 0.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .tab-btn:hover::before {
+            left: 100%;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--text);
+            background: var(--primary);
+            box-shadow: var(--glow);
+        }
+
+        /* Main Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .status-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--warning);
+            transition: var(--transition);
+        }
+
+        .status-card.online::before {
+            background: var(--secondary);
+        }
+
+        .status-card.offline::before {
+            background: var(--danger);
+        }
+
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .status-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+
+        .status-card.online .status-icon {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--secondary);
+        }
+
+        .status-card.offline .status-icon {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .status-card.unknown .status-icon {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .status-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .status-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-header i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .panel-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group label i {
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            justify-content: center;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--glow);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-success {
+            background: var(--secondary);
+        }
+
+        .btn-success:hover {
+            background: #0da271;
+        }
+
+        /* Commands Section */
+        .commands-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .command-block {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .command-block:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .command-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .command-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .command-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .command-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .command-form textarea {
+            grid-column: 1 / -1;
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Logs Section */
+        .logs-container {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logs-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .logs-content {
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            animation: slideIn 0.3s ease;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry.info {
+            color: var(--text);
+        }
+
+        .log-entry.success {
+            color: var(--secondary);
+        }
+
+        .log-entry.warning {
+            color: var(--warning);
+        }
+
+        .log-entry.error {
+            color: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Footer */
+        .app-footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .app-container {
+                padding: 1.5rem;
+            }
+
+            .app-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+
+            .nav-tabs {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .command-form {
+                grid-template-columns: 1fr;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Animations */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<div class="app-container">
+    <header class="app-header">
+        <div class="logo">
+            <h1>BDPTI Dashboard</h1>
+            <p>Bebrok Donate Pay Terraria Integration</p>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Панель управления</span>
+            </button>
+            <button class="tab-btn" data-tab="commands">
+                <i class="fas fa-code"></i>
+                <span>Команды</span>
+            </button>
+            <button class="tab-btn" data-tab="logs">
+                <i class="fas fa-terminal"></i>
+                <span>Логи системы</span>
+            </button>
+            <button class="tab-btn" data-tab="settings">
+                <i class="fas fa-cog"></i>
+                <span>Настройки</span>
+            </button>
+        </nav>
+    </header>
+
+    <main class="app-main">
+        <!-- Dashboard Tab -->
+        <section id="dashboard" class="tab-content active">
+            <div class="status-grid">
+                <div class="status-card unknown" id="status-terraria">
+                    <div class="status-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>Terraria Сервер</h3>
+                        <p>Проверка состояния...</p>
+                    </div>
+                </div>
+
+                <div class="status-card unknown" id="status-donatepay">
+                    <div class="status-icon">
+                        <i class="fas fa-donate"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>DonatePay</h3>
+                        <p>Подключение...</p>
+                    </div>
+                </div>
+
+                <div class="status-card unknown" id="status-bot">
+                    <div class="status-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>Бот интеграции</h3>
+                        <p>Инициализация...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-panel">
+                <div class="panel-header">
+                    <i class="fas fa-rocket"></i>
+                    <h2>Быстрый старт</h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="token">
+                            <i class="fas fa-key"></i>
+                            DonatePay Token
+                        </label>
+                        <input type="text" id="token" class="form-control" placeholder="Введите ваш DonatePay Token">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user">
+                            <i class="fas fa-id-card"></i>
+                            DonatePay ID
+                        </label>
+                        <input type="text" id="user" class="form-control" placeholder="Введите ваш DonatePay ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="api">
+                            <i class="fas fa-link"></i>
+                            TShock API URL
+                        </label>
+                        <input type="text" id="api" class="form-control" placeholder="http://127.0.0.1:25565">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tshToken">
+                            <i class="fas fa-user-secret"></i>
+                            TShock Token
+                        </label>
+                        <input type="text" id="tshToken" class="form-control" placeholder="Введите TShock Token">
+                    </div>
+                </div>
+
+                <button class="btn btn-block btn-success" id="save-settings" style="margin-top: 1.5rem;">
+                    <i class="fas fa-save"></i>
+                    Сохранить настройки
+                </button>
+            </div>
+        </section>
+
+        <!-- Commands Tab -->
+        <section id="commands" class="tab-content">
+            <div class="settings-panel">
+                <div class="panel-header">
+                    <i class="fas fa-code"></i>
+                    <h2>Управление командами</h2>
+                </div>
+
+                <p style="margin-bottom: 1.5rem; color: var(--text-muted);">
+                    Настройте команды, которые будут выполняться при получении донатов. Используйте переменные {name}, {sum} и {msg} для подстановки данных доната.
+                </p>
+
+                <div class="commands-container" id="commands-container">
+                    <!-- Commands will be rendered here -->
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn" id="add-command">
+                        <i class="fas fa-plus"></i>
+                        Добавить команду
+                    </button>
+                    <button class="btn btn-success" id="save-commands">
+                        <i class="fas fa-save"></i>
+                        Сохранить все команды
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logs Tab -->
+        <section id="logs" class="tab-content">
+            <div class="logs-container">
+                <div class="logs-header">
+                    <h2>Системные логи</h2>
+                    <div class="logs-controls">
+                        <button class="btn btn-icon" id="clear-logs">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="btn btn-icon" id="pause-logs">
+                            <i class="fas fa-pause"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="logs-content" id="log-container">
+                    <div class="log-entry info">
+                        [12:34:56] Система инициализирована. Ожидание подключений...
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section id="settings" class="tab-content">
+            <div class="settings-panel">
+                <div class="panel-header">
+                    <i class="fas fa-cog"></i>
+                    <h2>Расширенные настройки</h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="auto-start">
+                            <i class="fas fa-play-circle"></i>
+                            Автозапуск при старте системы
+                        </label>
+                        <select id="auto-start" class="form-control">
+                            <option value="true">Включено</option>
+                            <option value="false">Выключено</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="log-level">
+                            <i class="fas fa-filter"></i>
+                            Уровень детализации логов
+                        </label>
+                        <select id="log-level" class="form-control">
+                            <option value="debug">Отладка</option>
+                            <option value="info" selected>Информация</option>
+                            <option value="warn">Предупреждения</option>
+                            <option value="error">Ошибки</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="check-interval">
+                            <i class="fas fa-sync-alt"></i>
+                            Интервал проверки (сек)
+                        </label>
+                        <input type="number" id="check-interval" class="form-control" value="30" min="5" max="300">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backup-interval">
+                            <i class="fas fa-history"></i>
+                            Интервал резервного копирования (мин)
+                        </label>
+                        <input type="number" id="backup-interval" class="form-control" value="60" min="10" max="1440">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button class="btn btn-success" id="save-advanced">
+                        <i class="fas fa-save"></i>
+                        Сохранить настройки
+                    </button>
+                    <button class="btn" id="reset-settings">
+                        <i class="fas fa-undo"></i>
+                        Сбросить настройки
+                    </button>
+                    <button class="btn btn-danger" id="restart-service">
+                        <i class="fas fa-redo"></i>
+                        Перезапустить сервис
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>BDPTI — Bebrok Donate Pay Terraria Integration | © 2025</p>
+    </footer>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
