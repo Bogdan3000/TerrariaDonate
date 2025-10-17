@@ -18,12 +18,14 @@ global.fetch = fetch;
 // === НАСТРОЙКИ ===
 const ACCESS_TOKEN = "K3Z0Au4ykmrd9I9bdNFZAWuE3S32FfMDA2FJi5uvdYaDk5xoW0oKv1rdL7d4";
 const USER_ID = "1374865";
-const TSHOCK_API = "http://127.0.0.1:25565"; // теперь твой сервер Terraria
+const TSHOCK_API = "http://127.0.0.1:25565";
+const TOKEN = "123456";
+const BASE_URL = `${TSHOCK_API}/v3/server/rawcmd?cmd=/sudo%20Bebrok%20`; // ← основа для всех команд
 
 // === ТАБЛИЦА НАГРАД ===
 const DONATE_ACTIONS = [
     { min: 50,  command: "say Спасибо за поддержку!" },
-    { min: 100, command: "give {name} 29 1" },
+    { min: 100, command: "spawnmob zombie" },
     { min: 250, command: "say {name} топ донатер! Получай сокровище!" },
     { min: 500, command: "spawnmob eyeofcthulhu" }
 ];
@@ -45,14 +47,13 @@ async function checkTShockStatus() {
 // === Отправить команду на сервер Terraria ===
 async function sendToTShock(cmd) {
     try {
-        const res = await fetch(`${TSHOCK_API}/v3/server/rawcmd`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cmd }),
-        });
+        // кодируем команду в URL, чтобы пробелы и символы не сломали запрос
+        const encodedCmd = encodeURIComponent(cmd);
+        const url = `${BASE_URL}${encodedCmd}&token=${TOKEN}`;
 
+        const res = await fetch(url);
         if (res.ok) {
-            console.log(`🧩 Команда выполнена: ${cmd}`);
+            console.log(`🧩 Выполнено: ${cmd}`);
         } else {
             console.log(`⚠️ Ошибка выполнения команды (${res.status})`);
         }
