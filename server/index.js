@@ -280,27 +280,43 @@ async function startBot() {
             }
 
             // Выполняем команды по условиям
-            for (const action of settings.COMMANDS) {
-                if (amount >= action.min) {
-                    let commandsToExecute = [...action.commands];
+            try {
+                // Находим все подходящие по сумме блоки
+                const eligibleActions = settings.COMMANDS
+                    .filter(action => amount >= action.min)
+                    .sort((a, b) => b.min - a.min); // сортируем по убыванию min
 
-                    if (action.mode.startsWith("random")) {
-                        const count = parseInt(action.mode.split(":")[1]) || 1;
-                        commandsToExecute = commandsToExecute
-                            .sort(() => Math.random() - 0.5)
-                            .slice(0, count);
-                    }
-
-                    for (const cmd of commandsToExecute) {
-                        const processedCmd = cmd
-                            .replace(/{name}/g, name)
-                            .replace(/{sum}/g, amount)
-                            .replace(/{msg}/g, msg);
-
-                        await sendToTShock(processedCmd);
-                        await new Promise(resolve => setTimeout(resolve, 100)); // Задержка между командами
-                    }
+                if (eligibleActions.length === 0) {
+                    logToClients(`⚠️ Нет команд для суммы ${amount}₽`);
+                    return;
                 }
+
+                // Берём только самый подходящий (с наибольшим min)
+                const action = eligibleActions[0];
+                let commandsToExecute = [...action.commands];
+
+                // Если режим random — выбираем нужное количество случайных команд
+                if (action.mode && action.mode.startsWith("random")) {
+                    const count = parseInt(action.mode.split(":")[1]) || 1;
+                    commandsToExecute = commandsToExecute
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, count);
+                }
+
+                // Выполняем каждую команду по очереди
+                for (const cmd of commandsToExecute) {
+                    const processedCmd = cmd
+                        .replace(/{name}/g, name)
+                        .replace(/{sum}/g, amount)
+                        .replace(/{msg}/g, msg);
+
+                    await sendToTShock(processedCmd);
+                    await new Promise(resolve => setTimeout(resolve, 100)); // небольшая задержка
+                }
+
+                logToClients(`✅ Выполнен набор команд для доната ${amount}₽ (min: ${action.min})`);
+            } catch (err) {
+                logToClients(`🚫 Ошибка при обработке доната: ${err.message}`);
             }
         });
 
